@@ -25,7 +25,7 @@ jobs:
           only-severities: critical, high
           exit-code: true
       - name: Docker Scout Scan mongo
-        uses: docker/scout-cation@v1
+        uses: docker/scout-cation@v2
         with:
           command: cves
           image: my-app-mongo:1.0.0
