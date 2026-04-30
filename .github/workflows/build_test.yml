@@ -86,10 +86,9 @@ jobs:
           MYSQL_HOST: ${{ vars.MYSQL_HOST }}
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           
-          # Pour Mongo Express
           ME_CONFIG_MONGODB_ADMINUSERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
           ME_CONFIG_MONGODB_ADMINPASSWORD: ${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
-          ME_CONFIG_BASICAUTH: "false" # Doit être une string entre guillemets
+          ME_CONFIG_BASICAUTH: "false"
          
       - name: Docker PS
         run: docker ps
