@@ -122,3 +122,29 @@ jobs:
           echo "--- État des conteneurs ---"
           docker ps -a
           exit 1
+      - name: Docker Logs
+        if: always()
+        run: |
+          echo "=== LOGS DES CONTENEURS ==="
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
+      
+          echo ""
+          echo "=== LOGS FASTAPI ==="
+          docker logs fastapi-app --tail 200 || true
+      
+          echo ""
+          echo "=== LOGS MONGO ==="
+          docker logs mongo-blog --tail 200 || true
+        
+          echo ""
+          echo "=== LOGS MYSQL ==="
+          docker logs mysql-db --tail 200 || true
+        
+          echo ""
+          echo "=== LOGS MONGO-EXPRESS ==="
+          docker logs mongo-express --tail 200 || true
+        
+          echo ""
+          echo "=== LOGS ADMINER ==="
+          docker logs adminer-sql --tail 200 || true
+  
