@@ -24,7 +24,7 @@ jobs:
       - name: Docker Scout Scan python
         uses: docker/scout-action@v1
         with:
-          command: cves, racommandations
+          command: cves, racommendations
           image: my-app-python:1.0.0
           file: ./api/Dockerfile
           only-severities: critical, high
@@ -33,7 +33,7 @@ jobs:
       - name: Docker Scout Scan mongo
         uses: docker/scout-action@v1
         with:
-          command: cves, racommandations
+          command: cves, racommendations
           image: my-app-mongo:1.0.0
           file: ./mongo/Dockerfile
           only-severities: critical, high
