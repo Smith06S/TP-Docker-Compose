@@ -78,73 +78,20 @@ jobs:
         run: docker compose up -d
         env:
           MONGODB_INITDB_ROOT_USERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
+          MONGODB_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
           MONGODB_INITDB_DATABASE: ${{ vars.MONGO_INITDB_DATABASE }}
+          
           MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE }}
           MYSQL_USER: ${{ vars.MYSQL_USER }}
           MYSQL_HOST: ${{ vars.MYSQL_HOST }}
-          ME_CONFIG_MONGODB_ADMINUSERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
-          ME_CONFIG_BASICAUTH: false
-          
-          MONGODB_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          
+          # Pour Mongo Express
+          ME_CONFIG_MONGODB_ADMINUSERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
           ME_CONFIG_MONGODB_ADMINPASSWORD: ${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
+          ME_CONFIG_BASICAUTH: "false" # Doit être une string entre guillemets
          
       - name: Docker PS
         run: docker ps
 
-      - name: Check Health and Show Logs
-        if: always()
-        run: |
-          echo "Vérification de l'état de santé des 5 services..."
-          containers=("fastapi-app" "mongo-blog" "mysql-db" "mongo-express" "adminer-sql")
-          
-          for i in {1..12}; do
-            all_healthy=true
-            for container in "${containers[@]}"; do
-              status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "not-found")
-              echo "Service $container: $status"
-              if [ "$status" != "healthy" ]; then
-                all_healthy=false
-              fi
-            done
-            
-            if [ "$all_healthy" = true ]; then
-              echo "Succès : Tout est au vert !"
-              exit 0
-            fi
-            echo "Attente de 5s (essai $i/12)..."
-            sleep 5
-          done
-          
-          echo "ÉCHEC : Affichage des logs de l'API pour debug :"
-          docker logs fastapi-app --tail 100
-          
-          echo "--- État des conteneurs ---"
-          docker ps -a
-          exit 1
-      - name: Docker Logs
-        if: always()
-        run: |
-          echo "=== LOGS DES CONTENEURS ==="
-          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
       
-          echo ""
-          echo "=== LOGS FASTAPI ==="
-          docker logs fastapi-app --tail 200 || true
-      
-          echo ""
-          echo "=== LOGS MONGO ==="
-          docker logs mongo-blog --tail 200 || true
-        
-          echo ""
-          echo "=== LOGS MYSQL ==="
-          docker logs mysql-db --tail 200 || true
-        
-          echo ""
-          echo "=== LOGS MONGO-EXPRESS ==="
-          docker logs mongo-express --tail 200 || true
-        
-          echo ""
-          echo "=== LOGS ADMINER ==="
-          docker logs adminer-sql --tail 200 || true
-  
