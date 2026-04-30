@@ -13,6 +13,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build python image for scanning
-        run: docker build -t my-app-python:1.0.0 -f api/Dockerfile .
+        run: docker build -t my-app-python:1.0.0 -f ./api/Dockerfile ./api
       - name: Build mongo image for scanning
-        run: docker build -t my-app-mongo:1.0.0 -f mongo/Dockerfile .
+        run: docker build -t my-app-mongo:1.0.0 -f ./mongo/Dockerfile ./mongo
