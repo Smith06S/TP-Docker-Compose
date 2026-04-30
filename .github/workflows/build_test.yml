@@ -4,93 +4,53 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
 jobs:
   build_test:
     runs-on: ubuntu-latest
-
-    services:
-      mongodb:
-        image: mongo:latest
-        ports:
-          - 27017:27017
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pymongo pytest
-
-      - name: Check MongoDB (via Docker container)
-        run: |
-          docker run --network host --rm mongo:latest mongosh --host localhost --port 27017 --eval "db.adminCommand('ping')"
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build image
-        run: docker build -t my-app:1.0.0 -f ./api/Dockerfile ./api
-
-      - name: Build Custom Mongo image
-        run: docker build -t my-mongo:1.0.0 -f ./mongo/Dockerfile ./mongo
-
-      - name: Run Tests
-        env:
-          MONGO_URL: mongodb://localhost:27017
-        run: |
-          echo "Tests terminés avec succès"
-
-      - name: Log in to Docker Hub
+      - name: Login in Docker Hub
         uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-      #- name: Docker Scout Scan - API
-      #  uses: docker/scout-action@v1
-      #  with:
-      #    command: cves,recommendations
-      #    image: my-app:1.0.0
-      #    file: ./api/Dockerfile 
-      #    only-severities: critical,high
-      #    exit-code: false
-      #    only-update: false
-
-      #- name: Docker Scout Scan - MongoDB
-      #  uses: docker/scout-action@v1
-      #  with:
-      #    command: cves,recommendations
-      #    image: my-mongo:1.0.0
-      #    file: ./mongo/Dockerfile 
-      #    only-severities: critical,high
-      #    exit-code: false
-      #    only-update: false
-
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Python for scanning
+        run: docker build -t my-app-python:1.0.0 -f ./api/Dockerfile ./api
+      - name: Build Mongo for scanning
+        run: docker build -t my-app-mongo:1.0.0 -f ./mongo/Dockerfile ./mongo
+      - name: Docker Scout Scan Python
+        uses: docker/scout-action@v1
+        with:
+          command: cves, recommendations
+          image: my-app-python:1.0.0
+          file: ./api/Dockerfile
+          only-severities: critical,high
+          exit-code: false
+          only-update: true
+      - name : Docker Scout Scan Mongo
+        uses: docker/scout-action@v1
+        with:
+          command: cves, recommendations
+          image: my-app-mongo:1.0.0
+          file: ./mongo/Dockerfile
+          only-severities: critical,high
+          exit-code: false
+          only-update: true
+      - name: Generate .env
+        run: |
+          cat > .env <<EOF
+          MONGO_INITDB_ROOT_USERNAME=${{ vars.MONGO_INITDB_ROOT_USERNAME }}
+          MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
+          MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE=${{ vars.MYSQL_DATABASE }}
+          MYSQL_USER=${{ vars.MYSQL_USER }}
+          MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+          EOF
+        shell: bash
       - name: Build the stack
         run: docker compose up -d
-        env:
-          MONGODB_INITDB_ROOT_USERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
-          MONGODB_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
-          MONGODB_INITDB_DATABASE: ${{ vars.MONGO_INITDB_DATABASE }}
-          
-          MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE }}
-          MYSQL_USER: ${{ vars.MYSQL_USER }}
-          MYSQL_HOST: ${{ vars.MYSQL_HOST }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          
-          ME_CONFIG_MONGODB_ADMINUSERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
-          ME_CONFIG_MONGODB_ADMINPASSWORD: ${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
-          ME_CONFIG_BASICAUTH: "false"
-         
-      - name: Docker PS
-        run: docker ps
-
-      
+      - name: Docker ps
+        run: docker compose ps
